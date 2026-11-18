@@ -1,0 +1,42 @@
+{
+  "title": "Slogan for a neighborhood bakery",
+  "question": "Which slogan works better on the sign?",
+  "format": "round-robin",
+  "lang": "en",
+  "stage": "light",
+  "stage_height": 200,
+  "seed": 3,
+  "task": "Put the winning slogan on the sign and in the bakery website header.",
+  "items": [
+    {
+      "id": "S1",
+      "label": "Morning starts here",
+      "text": "Morning starts here",
+      "note": "about the ritual"
+    },
+    {
+      "id": "S2",
+      "label": "Bread like grandma made",
+      "text": "Bread like grandma made",
+      "note": "about memory"
+    },
+    {
+      "id": "S3",
+      "label": "Baking since 5 a.m.",
+      "text": "Baking since 5 a.m.",
+      "note": "about craft"
+    },
+    {
+      "id": "S4",
+      "label": "Warm on the corner",
+      "text": "Warm on the corner",
+      "note": "about the place"
+    },
+    {
+      "id": "S5",
+      "label": "Flour, water, time",
+      "text": "Flour, water, time",
+      "note": "about the recipe"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "tournament-skill",
+  "owner": { "name": "Yakov Vasiliev" },
+  "metadata": { "description": "Pairwise tournament of options for agents", "version": "1.0.0" },
+  "plugins": [
+    { "name": "tournament", "description": "Турнир вариантов парами: страница дуэлей, итоговые места и JSON для агента", "source": "./", "strict": false, "skills": ["./skills/tournament"] },
+    { "name": "tournament-en", "description": "Pairwise tournament of options: duel page, final ranking and JSON for the agent", "source": "./", "strict": false, "skills": ["./skills/tournament-en"] }
+  ]
+}

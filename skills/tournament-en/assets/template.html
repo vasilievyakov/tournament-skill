@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament</title>
+<style>
+  :root {
+    --bg: #0f1012; --panel: #17181b; --panel-2: #1f2125; --line: #2c2e33; --line-strong: #5a5d66;
+    --fg: #eef0f3; --dim: #a6aab3; --faint: #737782; --accent: #6ea8ff; --accent-fg: #0b1220; --win: #57d68d;
+    --stage-dark: #0b0b0c; --stage-light: #f4f2ee;
+    --radius: 12px;
+    font-synthesis: none;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f5f6f8; --panel: #ffffff; --panel-2: #eef0f3; --line: #dfe2e7; --line-strong: #9aa0aa;
+            --fg: #14161a; --dim: #4c525c; --faint: #6c727c; --accent: #2f6fe0; --accent-fg: #ffffff; --win: #15934c; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+  header.wrap { padding: 28px 20px 12px; }
+  .eyebrow { font: 600 12px/1.2 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+  h1 { font-size: clamp(24px, 3.2vw, 34px); line-height: 1.15; margin: 0 0 6px; letter-spacing: -.01em; }
+  .question { color: var(--dim); margin: 0; font-size: 17px; }
+
+  .bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  .bar .wrap { display: flex; align-items: center; gap: 14px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+  .progress { flex: 1; min-width: 220px; }
+  .progress .txt { font-size: 14px; color: var(--dim); margin-bottom: 6px; }
+  .progress .txt b { color: var(--fg); }
+  .track { height: 4px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .track i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+  button { font: 600 13px/1 inherit; font-family: inherit; padding: 9px 13px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--fg); border: 1px solid var(--line-strong); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.pri { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  button:focus-visible, .side:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main.wrap { padding: 20px 20px 80px; }
+  .duel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .side { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: border-color .12s, transform .12s; }
+  .side:hover { border-color: var(--accent); }
+  .side.chosen { border-color: var(--win); transform: scale(.99); }
+  .side .head { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 15px; gap: 10px; }
+  .side .head kbd { font: 500 12px ui-monospace, Menlo, monospace; color: var(--faint); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; }
+  .stage { position: relative; display: grid; place-items: center; padding: 28px 22px; min-height: var(--stage-h, 260px); overflow: hidden; }
+  .stage.dark { background: var(--stage-dark); color: #f3f1ec; }
+  .stage.light { background: var(--stage-light); color: #16140f; }
+  .stage.panel { background: var(--panel); }
+  .side .pick { border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 13px; background: var(--panel-2); width: 100%; }
+  .side:hover .pick { background: var(--accent); color: var(--accent-fg); }
+  .hint { color: var(--faint); font-size: 13px; margin-top: 14px; text-align: center; }
+
+  .result { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .card.champ { border-color: var(--win); }
+  .card .in { padding: 16px 18px; }
+  .card h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.01em; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; color: var(--dim); font-weight: 600; }
+  .rank { list-style: none; margin: 0; padding: 0; }
+  .rank li { display: flex; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .rank li:first-child { border-top: 0; }
+  .rank .pl { font: 600 12px ui-monospace, Menlo, monospace; color: var(--faint); min-width: 52px; padding-top: 2px; }
+  .rank .sc { margin-left: auto; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hist { margin: 0; padding-left: 18px; color: var(--dim); font-size: 13px; max-height: 260px; overflow: auto; }
+  .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  textarea { width: 100%; min-height: 64px; resize: vertical; padding: 10px; font: 14px/1.4 inherit; font-family: inherit; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 8px; }
+  .out { margin-top: 12px; display: none; }
+  .out.open { display: block; }
+  .out textarea { min-height: 180px; font: 12px/1.4 ui-monospace, Menlo, monospace; }
+  .msg { font-size: 13px; color: var(--dim); margin: 6px 0 0; }
+  @media (max-width: 860px) { .duel, .result { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .side, .track i { transition: none; } }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <p class="eyebrow" id="eyebrow"></p>
+  <h1 id="title"></h1>
+  <p class="question" id="question"></p>
+</header>
+<div class="bar"><div class="wrap">
+  <div class="progress"><div class="txt" id="ptxt"></div><div class="track"><i id="pbar"></i></div></div>
+  <button type="button" id="replay"></button>
+  <button type="button" id="undo"></button>
+  <button type="button" id="restart"></button>
+</div></div>
+<main class="wrap" id="main"></main>
+
+<script id="spec" type="application/json">/*__SPEC__*/</script>
+<script id="candidate-css" type="text/plain">/*__CSS__*/</script>
+<script>
+(function () {
+  "use strict";
+  var SPEC = JSON.parse(document.getElementById("spec").textContent);
+  var L = {
+    ru: { eyebrow: "Турнир", round: "Раунд", match: "матч", of: "из", inPlay: "в игре", left: "Слева", right: "Справа", pick: "Этот лучше",
+          hint: "Клик по варианту или ← / →. Отмена: Z. Перезапустить анимацию: пробел.", replay: "Перезапустить", undo: "Отменить", restart: "Заново",
+          restartSure: "Точно заново?", champion: "Победитель", ranking: "Итоговые места", history: "Все матчи", beats: "сильнее", bye: "проходит без пары",
+          why: "Почему победитель (по желанию)", copy: "Скопировать результат", copied: "Скопировано. Вставь в чат с агентом.", manual: "Выдели текст и скопируй вручную.",
+          rr: "Круговой турнир", el: "Турнир на выбывание", duels: "дуэлей", wins: "побед", final: "Финал", semi: "Полуфинал" },
+    en: { eyebrow: "Tournament", round: "Round", match: "match", of: "of", inPlay: "in play", left: "Left", right: "Right", pick: "This one",
+          hint: "Click a side or press ← / →. Undo: Z. Replay animation: Space.", replay: "Replay", undo: "Undo", restart: "Restart",
+          restartSure: "Sure?", champion: "Winner", ranking: "Final ranking", history: "All matches", beats: "beats", bye: "advances without a match",
+          why: "Why the winner (optional)", copy: "Copy result", copied: "Copied. Paste it into the agent chat.", manual: "Select the text and copy it manually.",
+          rr: "Round robin", el: "Single elimination", duels: "duels", wins: "wins", final: "Final", semi: "Semifinal" }
+  }[SPEC.lang === "en" ? "en" : "ru"];
+  document.documentElement.lang = SPEC.lang === "en" ? "en" : "ru";
+
+  var ITEMS = SPEC.items, BY = {};
+  ITEMS.forEach(function (it) { BY[it.id] = it; });
+  var FORMAT = SPEC.format === "round-robin" ? "rr" : "el";
+  var BLIND = SPEC.blind !== false;
+  if (SPEC.stage_height) document.documentElement.style.setProperty("--stage-h", SPEC.stage_height + "px");
+  if (SPEC.text_size) document.documentElement.style.setProperty("--text-size", SPEC.text_size);
+
+  document.title = SPEC.title;
+  document.getElementById("eyebrow").textContent = (FORMAT === "rr" ? L.rr : L.el) + " · " + ITEMS.length;
+  document.getElementById("title").textContent = SPEC.title;
+  document.getElementById("question").textContent = SPEC.question || "";
+  document.getElementById("replay").textContent = L.replay;
+  document.getElementById("undo").textContent = L.undo;
+  document.getElementById("restart").textContent = L.restart;
+
+  // ---------- состояние ----------
+  var KEY = "tournament:" + SPEC.key;
+  function rng(seed) { var s = seed >>> 0 || 1; return function () { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
+  function shuffle(a, r) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  function fresh() {
+    var seed = SPEC.seed != null ? SPEC.seed : Math.floor(Math.random() * 1e9);
+    var r = rng(seed), ids = shuffle(ITEMS.map(function (i) { return i.id; }), r);
+    var st = { format: FORMAT, seed: seed, history: [], done: false };
+    if (FORMAT === "el") { st.round = 1; st.pool = ids; st.next = []; st.idx = 0; }
+    else { var pairs = []; for (var a = 0; a < ids.length; a++) for (var b = a + 1; b < ids.length; b++) pairs.push(r() < .5 ? [ids[a], ids[b]] : [ids[b], ids[a]]); st.pairs = shuffle(pairs, r); st.idx = 0; }
+    return st;
+  }
+  var S, UNDO = [];
+  try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+  if (!S || S.format !== FORMAT) S = fresh();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  function totalMatches() { return FORMAT === "rr" ? ITEMS.length * (ITEMS.length - 1) / 2 : ITEMS.length - 1; }
+  function played() { return S.history.filter(function (h) { return !h.bye; }).length; }
+
+  function advanceEl() {
+    while (!S.done && S.pool.length - S.idx < 2) {
+      if (S.pool.length - S.idx === 1) { S.next.push(S.pool[S.idx]); S.history.push({ round: S.round, bye: S.pool[S.idx] }); S.idx++; }
+      if (S.next.length === 1 && S.pool.length - S.idx === 0) { S.done = true; S.champion = S.next[0]; break; }
+      S.pool = S.next; S.next = []; S.idx = 0; S.round++;
+    }
+  }
+  function current() {
+    if (FORMAT === "rr") { if (S.idx >= S.pairs.length) { S.done = true; return null; } return S.pairs[S.idx]; }
+    advanceEl(); return S.done ? null : [S.pool[S.idx], S.pool[S.idx + 1]];
+  }
+  function pick(winnerSide) {
+    var pair = current(); if (!pair) return;
+    UNDO.push(JSON.stringify(S)); if (UNDO.length > 200) UNDO.shift();
+    var w = pair[winnerSide], l = pair[1 - winnerSide];
+    var rec = { a: pair[0], b: pair[1], winner: w, loser: l };
+    if (FORMAT === "el") { rec.round = S.round; S.next.push(w); S.idx += 2; } else { S.idx += 1; }
+    S.history.push(rec);
+    var el = document.querySelectorAll(".side")[winnerSide]; if (el) el.classList.add("chosen");
+    save(); setTimeout(render, 140);
+  }
+  function undo() { var s = UNDO.pop(); if (!s) return; S = JSON.parse(s); save(); render(); }
+
+  // ---------- места ----------
+  function ranking() {
+    var games = S.history.filter(function (h) { return !h.bye; });
+    if (FORMAT === "rr") {
+      var w = {}; ITEMS.forEach(function (i) { w[i.id] = 0; });
+      games.forEach(function (g) { w[g.winner]++; });
+      var ids = ITEMS.map(function (i) { return i.id; }).sort(function (a, b) {
+        if (w[b] !== w[a]) return w[b] - w[a];
+        var h = games.filter(function (g) { return (g.a === a && g.b === b) || (g.a === b && g.b === a); })[0];
+        return h ? (h.winner === a ? -1 : 1) : 0;
+      });
+      var out = [], place = 0, prev = null;
+      ids.forEach(function (id, i) { if (w[id] !== prev) { place = i + 1; prev = w[id]; } out.push({ place: String(place), ids: [id], score: w[id] }); });
+      // склеиваем одинаковые места
+      var merged = []; out.forEach(function (r) { var m = merged[merged.length - 1]; if (m && m.place === r.place) m.ids.push(r.ids[0]); else merged.push(r); });
+      return merged;
+    }
+    var lostIn = {}; games.forEach(function (g) { lostIn[g.loser] = g.round; });
+    var maxR = games.length ? games[games.length - 1].round : 1;
+    var groups = {}; Object.keys(lostIn).forEach(function (id) { (groups[lostIn[id]] = groups[lostIn[id]] || []).push(id); });
+    var res = [{ place: "1", ids: [S.champion] }], pos = 2;
+    for (var r = maxR; r >= 1; r--) { var g = groups[r]; if (!g) continue; res.push({ place: g.length > 1 ? pos + "–" + (pos + g.length - 1) : String(pos), ids: g }); pos += g.length; }
+    return res;
+  }
+
+  // ---------- отрисовка ----------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function content(it) {
+    if (it.html != null) return it.html;
+    if (it.image != null) return '<img alt="" src="' + esc(it.image) + '">';
+    if (it.code != null) return '<pre>' + esc(it.code) + '</pre>';
+    return '<div class="text">' + esc(it.text) + (it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</div>';
+  }
+  function stageCls(it) { return "stage " + (it.stage || SPEC.stage || "panel"); }
+  // каждый вариант рисуется в своем shadow DOM: CSS кандидатов и страницы не пересекаются
+  var CAND_CSS = document.getElementById("candidate-css").textContent;
+  var BASE_CSS = ":host{display:grid;place-items:center;width:100%;color:inherit;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif}" +
+    ".text{font-size:var(--text-size,clamp(20px,2.4vw,30px));line-height:1.3;text-align:center;max-width:30ch;font-weight:600;letter-spacing:-.005em}" +
+    ".text small{display:block;font-size:.55em;font-weight:400;opacity:.7;margin-top:.6em}" +
+    "img{max-width:100%;max-height:calc(var(--stage-h,260px) + 40px);object-fit:contain;display:block}" +
+    "pre{margin:0;max-width:100%;overflow:auto;font:13px/1.5 ui-monospace,'SF Mono',Menlo,monospace;text-align:left;white-space:pre-wrap}";
+  function mount(root) {
+    root.querySelectorAll(".stage[data-id]").forEach(function (st) {
+      var host = document.createElement("div"); host.style.width = "100%";
+      st.appendChild(host);
+      var sh = host.attachShadow({ mode: "open" });
+      sh.innerHTML = "<style>" + BASE_CSS + "\n" + CAND_CSS + "</style>" + content(BY[st.dataset.id]);
+    });
+  }
+  function label(it) { return esc(it.label || it.id); }
+  function wins(n) {
+    if (SPEC.lang === "en") return n === 1 ? "win" : "wins";
+    var a = n % 10, b = n % 100;
+    return (a === 1 && b !== 11) ? "победа" : (a >= 2 && a <= 4 && (b < 12 || b > 14)) ? "победы" : "побед";
+  }
+
+  var main = document.getElementById("main");
+  function render() {
+    var pair = current(); save();
+    var n = played(), tot = totalMatches();
+    document.getElementById("pbar").style.width = (n / tot * 100) + "%";
+    document.getElementById("undo").disabled = !UNDO.length;
+    document.getElementById("replay").style.display = pair ? "" : "none";
+    if (!pair) return renderResult();
+    var info;
+    if (FORMAT === "el") {
+      var inRound = Math.floor(S.pool.length / 2), m = Math.floor(S.idx / 2) + 1, alive = S.pool.length - S.idx + S.next.length;
+      var name = alive === 2 ? L.final : (alive <= 4 && inRound === 2 ? L.semi : L.round + " " + S.round);
+      info = "<b>" + name + "</b> · " + L.match + " " + m + " " + L.of + " " + inRound + " · " + L.inPlay + " " + alive + " " + L.of + " " + ITEMS.length;
+    } else {
+      info = "<b>" + L.match + " " + (S.idx + 1) + " " + L.of + " " + tot + "</b>";
+    }
+    document.getElementById("ptxt").innerHTML = info;
+    var a = BY[pair[0]], b = BY[pair[1]];
+    function side(it, i) {
+      return '<div class="side" tabindex="0" data-side="' + i + '"><div class="head"><span>' + (BLIND ? (i ? L.right : L.left) : label(it)) + '</span><kbd>' + (i ? "→" : "←") + '</kbd></div>' +
+        '<div class="' + stageCls(it) + '" data-id="' + esc(it.id) + '"></div><button type="button" class="pick" tabindex="-1">' + L.pick + '</button></div>';
+    }
+    main.innerHTML = '<div class="duel">' + side(a, 0) + side(b, 1) + '</div><p class="hint">' + L.hint + '</p>';
+    mount(main);
+    main.querySelectorAll(".side").forEach(function (el) {
+      el.addEventListener("click", function () { pick(Number(el.dataset.side)); });
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") pick(Number(el.dataset.side)); });
+    });
+  }
+  function result() {
+    var rk = ranking(), games = S.history.filter(function (h) { return !h.bye; });
+    var item = function (id) { return { id: id, label: BY[id].label || id }; };
+    var champ = rk[0].ids[0];
+    var o = { tournament: SPEC.title, question: SPEC.question || null, format: FORMAT === "rr" ? "round-robin" : "single-elimination", seed: S.seed,
+      champion: item(champ), ranking: rk.map(function (r) { var x = { place: r.place, items: r.ids.map(item) }; if (r.score != null) x.wins = r.score; return x; }),
+      matches: games.map(function (g) { var x = { winner: item(g.winner), loser: item(g.loser) }; if (g.round) x.round = g.round; return x; }),
+      why: (document.getElementById("why") || {}).value || "" };
+    if (FORMAT === "el" && rk[1]) o.runner_up = item(rk[1].ids[0]);
+    if (SPEC.task) o.task = SPEC.task;
+    if (SPEC.source) o.source = SPEC.source;
+    return o;
+  }
+  function renderResult() {
+    document.getElementById("ptxt").innerHTML = "<b>" + L.champion + "</b>";
+    var rk = ranking(), champ = BY[rk[0].ids[0]], games = S.history.filter(function (h) { return !h.bye; });
+    main.innerHTML =
+      '<div class="result"><div class="card champ"><div class="' + stageCls(champ) + '" data-id="' + esc(champ.id) + '"></div><div class="in">' +
+        '<p class="eyebrow">' + L.champion + '</p><h2>' + label(champ) + '</h2>' +
+        '<label class="msg" for="why">' + L.why + '</label><textarea id="why"></textarea>' +
+        '<div class="acts"><button type="button" class="pri" id="copy">' + L.copy + '</button></div>' +
+        '<div class="out" id="out"><textarea id="json" readonly></textarea><p class="msg" id="msg"></p></div></div></div>' +
+      '<div class="card"><div class="in"><h3>' + L.ranking + '</h3><ul class="rank">' +
+        rk.map(function (r) { return '<li><span class="pl">' + r.place + '</span><span>' + r.ids.map(function (id) { return label(BY[id]); }).join(", ") + '</span>' + (r.score != null ? '<span class="sc">' + r.score + " " + wins(r.score) + '</span>' : '') + '</li>'; }).join("") +
+        '</ul><h3 style="margin-top:16px">' + L.history + ' · ' + games.length + '</h3><ol class="hist">' +
+        S.history.map(function (h) { return h.bye ? '<li>' + label(BY[h.bye]) + ' ' + L.bye + '</li>' : '<li>' + label(BY[h.winner]) + ' ' + L.beats + ' ' + label(BY[h.loser]) + '</li>'; }).join("") +
+        '</ol></div></div></div>';
+    mount(main);
+    document.getElementById("copy").addEventListener("click", function () {
+      var json = JSON.stringify(result(), null, 2), out = document.getElementById("out"), ta = document.getElementById("json"), msg = document.getElementById("msg");
+      out.classList.add("open"); ta.value = json;
+      var ok = function () { msg.textContent = L.copied; };
+      var fb = function () { ta.focus(); ta.select(); var r = false; try { r = document.execCommand("copy"); } catch (e) {} msg.textContent = r ? L.copied : L.manual; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(ok, fb); else fb();
+    });
+  }
+
+  document.getElementById("undo").addEventListener("click", undo);
+  document.getElementById("replay").addEventListener("click", function () { if (!S.done) render(); });
+  var armed = false, rb = document.getElementById("restart");
+  rb.addEventListener("click", function () {
+    if (!armed) { armed = true; rb.textContent = L.restartSure; setTimeout(function () { armed = false; rb.textContent = L.restart; }, 2500); return; }
+    armed = false; rb.textContent = L.restart; S = fresh(); UNDO = []; render();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (/TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); pick(0); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); pick(1); }
+    else if (e.key === "z" || e.key === "Z" || e.key === "я" || e.key === "Я") undo();
+    else if (e.key === " " && !S.done) { e.preventDefault(); render(); }
+  });
+  window.__tournament = { pick: pick, undo: undo, state: function () { return S; }, result: result };
+  render();
+})();
+</script>
+</body>
+</html>
